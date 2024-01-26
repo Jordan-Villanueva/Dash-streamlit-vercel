@@ -8,10 +8,13 @@ import folium
 import plotly.express as px
 from streamlit_folium import folium_static
 from folium.plugins import MarkerCluster
+import time
 
 # Establecer la configuración de la página
 st.set_page_config(layout="wide")
 
+
+start_time_load_data = time.time()
 @st.cache
 def load_data():
     # Cargar datos y procesar una única vez
@@ -20,6 +23,13 @@ def load_data():
     data = data[(data['Entidad_Federativa'] != 'Nacional')].reset_index(drop=True)
     return data
 
+# Cargar datos
+data = load_data()
+end_time_load_data = time.time()
+st.write(f"Tiempo para cargar datos: {end_time_load_data - start_time_load_data:.2f} segundos")
+
+
+start_time_process_data = time.time()
 @st.cache
 def process_data(data, selected_year, selected_trimester):
     # Filtrar datos
@@ -45,8 +55,7 @@ def process_data(data, selected_year, selected_trimester):
     return filtered_data, fig
 
 
-# Cargar datos
-data = load_data()
+
 
 # Años y trimestres únicos
 unique_years = data['Periodo'].unique()
@@ -73,14 +82,20 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # Procesar datos
 filtered_data, fig = process_data(data, selected_year, selected_trimester)
+end_time_process_data = time.time()
+st.write(f"Tiempo para procesar datos: {end_time_process_data - start_time_process_data:.2f} segundos")
 
+start_time_create_map = time.time()
 # Usar st.plotly_chart con ancho personalizado
 st.plotly_chart(fig, use_container_width=True)
+end_time_process_data = time.time()
+st.write(f"Tiempo para graficar: {end_time_process_data - start_time_process_data:.2f} segundos")
 
 # Mapa coroplético
 st.title("Mapa Coroplético de Población Económica Activa en México")
 
 #poblacion total EA
+start_time_create_map = time.time()
 filtered_data = filtered_data.groupby('Entidad_Federativa')['Poblacion_Economicamente_Activa'].sum().reset_index()
 
 # Ruta a los archivos shapefile
@@ -134,6 +149,9 @@ gdf.apply(add_circle_marker, axis=1)
 
 # Añadir el control
 folium.LayerControl().add_to(m)
+
+end_time_create_map = time.time()
+st.write(f"Tiempo para crear el mapa: {end_time_create_map - start_time_create_map:.2f} segundos")
 
 # Desplegar el mapa
 folium_static(m, width=1600, height=950)
